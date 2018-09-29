@@ -6,6 +6,7 @@ import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
+import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 
@@ -13,6 +14,10 @@ import java.io.Serializable;
 /**
  * Created by zhangyuguang on 2018/9/29.
  */
+/*
+   这里注解不能忘记
+* */
+@Component(value = "authRealm")
 public class AuthRealm extends AuthorizingRealm {
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
