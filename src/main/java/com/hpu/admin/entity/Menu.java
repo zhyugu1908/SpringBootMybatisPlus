@@ -2,6 +2,7 @@ package com.hpu.admin.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.hpu.commomn.base.TreeEntity;
 import org.hibernate.validator.constraints.Length;
@@ -11,6 +12,10 @@ import org.hibernate.validator.constraints.Length;
  */
 @TableName("sys_menu")
 public class Menu extends TreeEntity<Menu> {
+    /*    主键不可缺少，否则报错
+    * */
+    @TableId(value = "id")
+    private String id;
 
     private String name;
 
@@ -116,5 +121,13 @@ public class Menu extends TreeEntity<Menu> {
         this.dataCount = dataCount;
     }
 
+    @Override
+    public String getId() {
+        return id;
+    }
 
+    @Override
+    public void setId(String id) {
+        this.id = id;
+    }
 }
