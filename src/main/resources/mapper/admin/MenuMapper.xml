@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hpu.admin.mapper.MenuMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="showMenuMap" type="com.hpu.admin.entity.vo.ShowMenuVo">
+        <result property="id"       column="id" />
+        <result property="pid"      column="pid"/>
+        <result property="title"    column="title"/>
+        <result property="icon"     column="icon"/>
+        <result property="href"     column="href"/>
+        <collection property="children" select="selectShowMenuByUser"  column="{parentId = id,userId = myuserId}">
+        </collection>
+    </resultMap>
+
+    <select id="selectShowMenuByUser" resultMap="showMenuMap" parameterType="java.util.Map">
+
+    </select>
+
+</mapper>

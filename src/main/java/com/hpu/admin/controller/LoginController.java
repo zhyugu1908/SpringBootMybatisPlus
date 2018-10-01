@@ -1,30 +1,39 @@
 package com.hpu.admin.controller;
 
 
+import com.baomidou.mybatisplus.extension.activerecord.Model;
 import com.google.code.kaptcha.impl.DefaultKaptcha;
+import com.hpu.admin.common.cexception.UserTypeAccountException;
 import com.hpu.admin.common.realm.AuthRealm;
 import com.hpu.admin.common.util.Constants;
+import com.hpu.admin.common.util.ResponseEntity;
 import com.hpu.admin.service.MenuService;
 import com.hpu.admin.service.SysUserService;
+import com.hpu.common.annotation.SysLog;
+import com.hpu.common.config.MySysUser;
 import freemarker.ext.beans.MapModel;
+import org.apache.catalina.security.SecurityUtil;
 import org.apache.catalina.servlet4preview.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.*;
 import org.apache.shiro.subject.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import sun.util.resources.LocaleData;
 
 import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.time.LocalDate;
 
 
 /**
@@ -118,4 +127,79 @@ public class LoginController {
 
     }
 
+    @PostMapping("admin/login")
+    @SysLog("用户登入")
+    @ResponseBody
+    public ResponseEntity adminLogin(HttpServletRequest request){
+        String userName = request.getParameter("username");
+        String password = request.getParameter("password");
+        String rememberMe = request.getParameter("rememberMe");
+        String code = request.getParameter("code");
+        if (StringUtils.isBlank(userName)|| StringUtils.isBlank(password)){
+            return ResponseEntity.failure("用户名或密码不能为空");
+        }else if (StringUtils.isBlank(code)){
+            return ResponseEntity.failure("验证码不能为空");
+        }
+        HttpSession session = request.getSession();
+        if (session==null){
+            return ResponseEntity.failure("session超时");
+        }
+        String tureCode = (String) session.getAttribute(Constants.VALIDATE_CODE);
+        if (StringUtils.isBlank(tureCode)){
+            return ResponseEntity.failure("验证码超时");
+        }
+        if (StringUtils.isBlank(code)||tureCode.toLowerCase().equals(code.toLowerCase()) ){
+            return ResponseEntity.failure("验证码错误");
+        }else {
+            /*当前用户*/
+            String errorMsg = null;
+            Subject user = SecurityUtils.getSubject();
+            UsernamePasswordToken token = new UsernamePasswordToken(userName,password,Boolean.valueOf(rememberMe));
+
+            try { //Ctrl + Alt + T
+                user.login(token);
+                LOGGER.debug(userName+"用户"+ LocalDate.now().toString()+":======>> 登入系统");
+            } catch (IncorrectCredentialsException e) {
+               errorMsg = "用户名密码错误";
+            }catch (UnknownAccountException e){
+                errorMsg = "账户不存在！";
+            }catch (LockedAccountException e){
+                errorMsg = "账户被锁定";
+            }catch (UserTypeAccountException e){
+                errorMsg = "账户不是管理用户";
+            }
+
+            if (StringUtils.isBlank(errorMsg)){
+                ResponseEntity responseEntity = new ResponseEntity();
+                responseEntity.setSuccess(Boolean.TRUE);
+                responseEntity.setAny("url","index");
+                return responseEntity;
+            } else {
+                return ResponseEntity.failure(errorMsg);
+            }
+        }
+
+
+    }
+    @GetMapping(value = "admin/main")
+    public String main(ModelMap map){
+        return "admin/main";
+    }
+
+    /***
+     * 获得用户所拥有的菜单列表
+     */
+    @GetMapping(value = "/admin/user/getUserMenu")
+    public String getUserMenu(){
+       String userId = MySysUser.id();
+       menuService.getShowMenuByUser(userId);
+       return null;
+    }
+
+    /*退出系统*/
+    @GetMapping(value = "systemLogout")
+    public String systemLogout(){
+        SecurityUtils.getSubject().logout();
+        return "redirect:admin";
+    }
 }
